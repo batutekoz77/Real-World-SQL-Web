@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Real World SQL Web – Login or Register</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+      :root {
+          --bg: #0f1226;
+          --card: rgba(255,255,255,0.06);
+          --card-border: rgba(255,255,255,0.12);
+          --text: #e8ecf1;
+          --muted: #a8b0bf;
+          --accent: #6aa5ff;
+          --accent-2: #8b5cf6;
+          --error: #ff6b6b;
+          --success: #38d9a9;
+          --shadow: 0 20px 60px rgba(0,0,0,0.35);
+          --radius: 20px;
+          --spacing: 14px;
+      }
+
+      * {
+          box-sizing: border-box
+      }
+
+      html, body {
+          height: 100%
+      }
+
+      body {
+          margin: 0;
+          font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+          color: var(--text);
+          background: radial-gradient(1200px 600px at 10% -10%, #1d1f3e 0%, transparent 60%), radial-gradient(1000px 600px at 110% 10%, #231a49 0%, transparent 60%), linear-gradient(160deg, #0b0f1f 0%, #0f1226 60%, #111632 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+      }
+
+      .shell {
+          width: 100%;
+          max-width: 1100px;
+          display: grid;
+          gap: 22px
+      }
+
+      .brand {
+          text-align: center;
+          letter-spacing: .5px
+      }
+
+          .brand h1 {
+              margin: 0;
+              font-size: clamp(28px,4vw,44px);
+              font-weight: 800;
+              background: linear-gradient(90deg,var(--accent),var(--accent-2));
+              -webkit-background-clip: text;
+              background-clip: text;
+              color: transparent;
+              text-shadow: 0 8px 30px rgba(106,165,255,0.25);
+          }
+
+          .brand p {
+              margin: 6px 0 0 0;
+              color: var(--muted);
+              font-size: 14px
+          }
+
+      .card {
+          background: var(--card);
+          border: 1px solid var(--card-border);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow);
+          backdrop-filter: blur(12px);
+          padding: clamp(18px,3.2vw,28px)
+      }
+
+      .choice {
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          flex-wrap: wrap
+      }
+
+      .btn {
+          appearance: none;
+          border: none;
+          border-radius: 14px;
+          padding: 12px 18px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform .06s ease, box-shadow .2s ease, background .2s ease;
+          color: #0c1220;
+          background: linear-gradient(90deg,var(--accent),#7cc0ff);
+          box-shadow: 0 10px 30px rgba(106,165,255,0.35);
+      }
+
+          .btn.secondary {
+              color: #0c1220;
+              background: linear-gradient(90deg,var(--accent-2),#b095ff);
+              box-shadow: 0 10px 30px rgba(139,92,246,0.35)
+          }
+
+          .btn:active {
+              transform: translateY(1px) scale(.99)
+          }
+
+          .btn[disabled] {
+              opacity: .65;
+              cursor: not-allowed
+          }
+
+      .forms {
+          display: grid;
+          gap: 18px
+      }
+
+      .fieldset {
+          display: grid;
+          gap: 12px;
+          grid-template-columns: 1fr
+      }
+
+      .row {
+          display: grid;
+          gap: 12px;
+          grid-template-columns: 1fr
+      }
+
+      @media (min-width: 720px) {
+          .row.two {
+              grid-template-columns: 1fr 1fr
+          }
+
+          .row.three {
+              grid-template-columns: 1fr 1fr 1fr
+          }
+
+          .dashboard {
+              grid-template-columns: 220px 1fr
+          }
+      }
+
+      label {
+          display: block;
+          font-size: 12px;
+          color: var(--muted);
+          margin-bottom: 6px;
+          letter-spacing: .2px
+      }
+
+      input, select, textarea {
+          width: 100%;
+          padding: 12px 12px;
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.16);
+          background: rgba(255,255,255,0.06);
+          color: var(--text);
+          outline: none;
+      }
+
+          input::placeholder, textarea::placeholder {
+              color: #9aa5b7
+          }
+
+      textarea {
+          resize: vertical;
+          min-height: 80px
+      }
+
+      select, option {
+          background: rgba(28,34,56,0.95);
+          color: var(--text)
+      }
+
+          select:focus {
+              border-color: var(--accent);
+              outline: none
+          }
+
+      .actions {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+          margin-top: 8px
+      }
+
+      .link {
+          background: none;
+          border: none;
+          color: var(--accent);
+          cursor: pointer;
+          text-decoration: underline;
+          padding: 0;
+          font-size: 14px
+      }
+
+      .hidden {
+          display: none
+      }
+
+      .notice {
+          margin-top: 8px;
+          font-size: 13px;
+          color: var(--muted)
+      }
+
+      .alert {
+          margin-top: 12px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.18);
+          background: rgba(0,0,0,0.25);
+          font-size: 14px;
+          white-space: pre-wrap
+      }
+
+          .alert.success {
+              border-color: rgba(56,217,169,.5);
+              color: var(--success)
+          }
+
+          .alert.error {
+              border-color: rgba(255,107,107,.5);
+              color: var(--error)
+          }
+
+      /* Dashboard */
+      .dashboard {
+          display: none;
+      }
+
+          .dashboard.active {
+              display: grid;
+              gap: 18px;
+          }
+
+      .sidebar {
+          background: var(--card);
+          border: 1px solid var(--card-border);
+          border-radius: 16px;
+          padding: 12px;
+          height: max-content;
+      }
+
+      .tablink {
+          display: block;
+          width: 100%;
+          text-align: left;
+          margin: 6px 0;
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.12);
+          background: rgba(255,255,255,0.04);
+          color: var(--text);
+          cursor: pointer;
+          font-weight: 600;
+      }
+
+          .tablink.active {
+              outline: 2px solid var(--accent);
+              background: rgba(106,165,255,.15)
+          }
+
+      .content {
+          background: var(--card);
+          border: 1px solid var(--card-border);
+          border-radius: 16px;
+          padding: 18px;
+          min-height: 420px
+      }
+
+      .toolbar {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px
+      }
+
+      table {
+          width: 100%;
+          border-collapse: collapse
+      }
+
+      th, td {
+          border-bottom: 1px solid rgba(255,255,255,0.12);
+          padding: 8px 6px;
+          font-size: 14px
+      }
+
+      th {
+          text-align: left;
+          color: var(--muted)
+      }
+
+      .pill {
+          display: inline-block;
+          padding: 3px 8px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.12);
+          font-size: 12px
+      }
+
+      .danger {
+          background: rgba(255,107,107,0.15);
+          border-color: rgba(255,107,107,0.4);
+          color: #ffb3b3
+      }
+
+      .success {
+          background: rgba(56,217,169,0.15);
+          border-color: rgba(56,217,169,0.4);
+          color: #a8f0db
+      }
+
+      .muted {
+          color: var(--muted)
+      }
+
+      .inline-input {
+          width: 100%;
+          padding: 6px 8px;
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.16);
+          background: rgba(255,255,255,0.06);
+          color: var(--text)
+      }
+
+      .small {
+          font-size: 12px
+      }
+
+      .stack {
+          display: grid;
+          gap: 8px
+      }
+
+      #membersTable td {
+          padding: 6px 8px;
+          font-size: 13px;
+          vertical-align: middle;
+          text-align: left; /* içerik sola yaslansın */
+      }
+
+      #membersTable input,
+      #membersTable select {
+          display: inline-block;
+          max-width: 180px; /* hücrede belli genişlikte kalsın */
+          width: auto; /* %100 olmasın */
+          min-width: 100px;
+          padding: 4px 6px;
+          font-size: 13px;
+          border: 1px solid rgba(255,255,255,0.16);
+          border-radius: 8px;
+          background: rgba(255,255,255,0.06);
+          color: var(--text);
+          box-sizing: border-box;
+      }
+
+          #membersTable select[name="role"] {
+              min-width: 120px;
+          }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="brand">
+      <h1>Real World SQL Web</h1>
+      <p>Choose an action to get started</p>
+    </div>
+
+    <!-- Choice -->
+    <div class="card" id="card-choice">
+      <div class="choice">
+        <button class="btn" id="go-login">Login</button>
+        <button class="btn secondary" id="go-register">Register</button>
+      </div>
+    </div>
+
+    <!-- Login -->
+    <div class="card hidden" id="card-login">
+      <h2 style="margin-top:0;">Login</h2>
+      <form id="loginForm" class="forms">
+        <div class="fieldset">
+          <div>
+            <label for="login-username">Username</label>
+            <input id="login-username" name="username" type="text" placeholder="Your username" required />
+          </div>
+          <div>
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password" placeholder="Your password" required />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="link" id="back-from-login">Back</button>
+          <button class="btn" id="loginBtn" type="submit">Sign in</button>
+        </div>
+      </form>
+      <div id="loginMsg" class="alert hidden"></div>
+    </div>
+
+    <!-- Register -->
+    <div class="card hidden" id="card-register">
+      <h2 style="margin-top:0;">Register</h2>
+      <form id="registerForm" class="forms">
+        <div class="row two">
+          <div>
+            <label for="reg-first">First Name</label>
+            <input id="reg-first" name="first_name" type="text" placeholder="Batu" required />
+          </div>
+          <div>
+            <label for="reg-last">Last Name</label>
+            <input id="reg-last" name="last_name" type="text" placeholder="Tekoz" required />
+          </div>
+        </div>
+        <div class="row two">
+          <div>
+            <label for="reg-username">Username</label>
+            <input id="reg-username" name="username" type="text" placeholder="batutekoz" required />
+          </div>
+          <div>
+            <label for="reg-email">Email</label>
+            <input id="reg-email" name="email" type="email" placeholder="batu@example.com" required />
+          </div>
+        </div>
+        <div class="row two">
+          <div>
+            <label for="reg-password">Password</label>
+            <input id="reg-password" name="password" type="password" placeholder="At least 8 characters" required />
+          </div>
+          <div>
+            <label for="reg-birth">Birth Year</label>
+            <input id="reg-birth" name="birth_year" type="number" min="1900" max="2100" placeholder="1999" required />
+          </div>
+        </div>
+        <div class="row three">
+          <div>
+            <label for="reg-gender">Gender</label>
+            <select id="reg-gender" name="gender" required>
+              <option value="" disabled selected>Select…</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+              <option>Prefer not to say</option>
+            </select>
+          </div>
+          <div>
+            <label for="reg-phone">Phone Number</label>
+            <input id="reg-phone" name="phone" type="text" placeholder="+31 6 1234 5678" required />
+          </div>
+          <div>
+            <label for="reg-address">Address</label>
+            <input id="reg-address" name="address" type="text" placeholder="Street, City, Country" required />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="link" id="back-from-register">Back</button>
+          <button class="btn" id="registerBtn" type="submit">Create account</button>
+        </div>
+        <p class="notice">By creating an account you agree that your data will be stored locally in your SQLite database.</p>
+      </form>
+      <div id="registerMsg" class="alert hidden"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="card-dashboard" class="dashboard hidden" style="margin-top:8px;">
+        <div class="sidebar">
+            <div class="stack small muted" id="whoami"></div>
+            <button class="tablink" data-tab="welcome">Welcome</button>
+            <button class="tablink" data-tab="announcements">Announcements</button>
+            <button class="tablink hide-for-customer" data-tab="tasks">Tasks</button>
+            <button class="tablink hide-db" data-tab="database">Database</button>
+        </div>
+        <div class="content">
+            <!-- Welcome -->
+            <section class="tab" id="tab-welcome">
+                <h2>Welcome</h2>
+                <p id="welcomeMsg">Hello!</p>
+            </section>
+
+            <!-- Announcements -->
+            <section class="tab hidden" id="tab-announcements">
+                <div class="toolbar">
+                    <h2>Announcements</h2>
+                    <div id="postAnnounceBar" class="hidden" style="display:flex;gap:8px;align-items:center;">
+                        <input id="announceText" class="inline-input" placeholder="Write a new announcement..." />
+                        <button class="btn" id="announceSend">Post</button>
+                    </div>
+                </div>
+                <div id="annList" class="stack"></div>
+            </section>
+
+            <!-- Tasks -->
+            <section class="tab hidden" id="tab-tasks">
+                <div class="toolbar">
+                    <h2>Tasks</h2>
+                    <div id="taskCreateBar" class="hidden" style="display:flex;gap:8px;align-items:center;">
+                        <input id="taskTitle" class="inline-input" placeholder="New task title" />
+                        <input id="taskBody" class="inline-input" placeholder="Task details (optional)" />
+                        <button class="btn" id="taskSend">Create</button>
+                    </div>
+                </div>
+                <div id="taskList" class="stack"></div>
+            </section>
+
+            <!-- Database -->
+            <section class="tab hidden" id="tab-database">
+                <div class="toolbar">
+                    <h2>Database</h2>
+                    <span class="small muted" id="dbHint"></span>
+                </div>
+                <div style="overflow:auto;">
+                    <table id="membersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>First</th>
+                                <th>Last</th>
+                                <th>Birth</th>
+                                <th>Gender</th>
+                                <th>Phone</th>
+                                <th>Address</th>
+                                <th>Role</th>
+                                <th>DB until</th>
+                                <th>ALL until</th>
+                                <th>Save</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div id="dbMsg" class="alert hidden"></div>
+            </section>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const $all = s => Array.from(document.querySelectorAll(s));
+
+    const cardChoice = $("#card-choice");
+    const cardLogin = $("#card-login");
+    const cardRegister = $("#card-register");
+    const cardDash = $("#card-dashboard");
+
+    const show = el => el.classList.remove("hidden");
+    const hide = el => el.classList.add("hidden");
+
+    // Nav between entry forms
+    $("#go-login").addEventListener("click", () => { hide(cardChoice); show(cardLogin); });
+    $("#go-register").addEventListener("click", () => { hide(cardChoice); show(cardRegister); });
+    $("#back-from-login").addEventListener("click", () => { hide(cardLogin); show(cardChoice); });
+    $("#back-from-register").addEventListener("click", () => { hide(cardRegister); show(cardChoice); });
+
+    function setAlert(el, ok, msg){ el.classList.remove("hidden","success","error"); el.classList.add(ok?"success":"error"); el.textContent = msg; }
+    function clearAlert(el){ el.classList.add("hidden"); el.textContent=""; }
+
+    // ---------------- Auth state ----------------
+    let AUTH = { token:null, role:null, username:null, canSeeDb:false, customersOnly:false };
+
+    async function fetchJSON(url, opts={}) {
+      opts.headers = Object.assign({ "Content-Type":"application/json" }, opts.headers||{});
+      if (AUTH.token) opts.headers["Authorization"] = "Bearer " + AUTH.token;
+      const res = await fetch(url, opts);
+      const txt = await res.text();
+      try { return { ok:res.ok, data: JSON.parse(txt) }; }
+      catch { return { ok:res.ok, data: txt }; }
+    }
+
+    // ---------------- LOGIN ----------------
+    $("#loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault(); clearAlert($("#loginMsg")); const btn=$("#loginBtn"); btn.disabled=true;
+      const data = Object.fromEntries(new FormData(e.target).entries());
+      try {
+        const r = await fetchJSON("/login", { method:"POST", body: JSON.stringify(data) });
+        if (!r.ok) { setAlert($("#loginMsg"), false, (r.data && r.data.message) || r.data || "Login failed"); return; }
+        AUTH.username = r.data.username; AUTH.role = r.data.role; AUTH.token = r.data.token;
+
+        // get computed permissions
+        const me = await fetchJSON("/me");
+        if (me.ok) {
+          AUTH.canSeeDb = !!me.data.canSeeDb;
+          AUTH.customersOnly = !!me.data.customersOnly;
+        }
+
+          // Show dashboard based on role
+        cardDash.classList.add("active");
+        initDashboard();
+        hide(cardLogin); hide(cardRegister); hide(cardChoice); show(cardDash);
+        selectTab("welcome");
+      } catch(err) {
+        setAlert($("#loginMsg"), false, "Network error: " + err.message);
+      } finally { btn.disabled=false; }
+    });
+
+    // ---------------- REGISTER ----------------
+    $("#registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault(); clearAlert($("#registerMsg")); const btn=$("#registerBtn"); btn.disabled=true;
+      const fd = new FormData(e.target);
+      const payload = {
+        username: fd.get("username"), password: fd.get("password"), email: fd.get("email"),
+        first_name: fd.get("first_name"), last_name: fd.get("last_name"),
+        birth_year: Number(fd.get("birth_year")), gender: fd.get("gender"),
+        phone: fd.get("phone"), address: fd.get("address"),
+      };
+      try {
+        const r = await fetch("/register", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(payload) });
+        const t = await r.text(); setAlert($("#registerMsg"), r.ok, t);
+        if (r.ok){ setTimeout(()=>{ hide(cardRegister); show(cardLogin); }, 900); }
+      } catch(err) {
+        setAlert($("#registerMsg"), false, "Network error: " + err.message);
+      } finally { btn.disabled=false; }
+    });
+
+    // ---------------- Dashboard & Tabs ----------------
+    function initDashboard(){
+      $("#whoami").innerHTML = `
+        <div><span class="muted">User:</span> <b>${AUTH.username}</b></div>
+        <div><span class="muted">Role:</span> <span class="pill">${AUTH.role}</span></div>
+      `;
+
+      // Role-based visibility
+      // Tasks hidden for Customers
+      if (AUTH.role === "Customer") {
+        document.querySelector('[data-tab="tasks"]').style.display = "none";
+      }
+      // Database hidden unless Admin OR Worker with active permission
+      const dbBtn = document.querySelector('[data-tab="database"]');
+      if (AUTH.role === "Admin" || AUTH.canSeeDb) dbBtn.style.display = "block";
+      else dbBtn.style.display = "none";
+
+      // Post announcement only Admin
+      if (AUTH.role === "Admin") { $("#postAnnounceBar").classList.remove("hidden"); }
+      else { $("#postAnnounceBar").classList.add("hidden"); }
+
+      // Create task only Admin
+      if (AUTH.role === "Admin") { $("#taskCreateBar").classList.remove("hidden"); }
+      else { $("#taskCreateBar").classList.add("hidden"); }
+
+      // Welcome text
+      $("#welcomeMsg").textContent = `Hello, ${AUTH.username}!`;
+
+      // DB hint
+      const hint = $("#dbHint");
+      if (AUTH.role === "Admin") hint.textContent = "You can view and edit all users.";
+      else if (AUTH.role === "Worker" && AUTH.canSeeDb && AUTH.customersOnly) hint.textContent = "Temporary access: You can view Customers only.";
+      else if (AUTH.role === "Worker" && AUTH.canSeeDb && !AUTH.customersOnly) hint.textContent = "Temporary access: You can view everyone.";
+      else hint.textContent = "";
+
+      // Load initial data for tabs
+      loadAnnouncements();
+      if (AUTH.role === "Admin" || AUTH.role === "Worker") loadTasks();
+      if (AUTH.role === "Admin" || AUTH.canSeeDb) loadMembers();
+    }
+
+    function selectTab(name){
+      $all(".tablink").forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
+      $all(".tab").forEach(t=> t.classList.toggle("hidden", t.id !== "tab-"+name));
+    }
+
+    $all(".tablink").forEach(btn=>{
+      btn.addEventListener("click", ()=> selectTab(btn.dataset.tab));
+    });
+
+    // ---------------- Announcements ----------------
+    async function loadAnnouncements(){
+      const r = await fetchJSON("/announcements");
+      const box = $("#annList");
+      box.innerHTML = "";
+      if (!r.ok){ box.innerHTML = `<div class="alert error">Failed to load announcements</div>`; return; }
+      const items = r.data.items || [];
+      if (!items.length) { box.innerHTML = `<div class="muted">No announcements yet.</div>`; return; }
+      items.forEach(a=>{
+        const el = document.createElement("div");
+        el.className = "card";
+        el.innerHTML = `
+          <div class="small muted">${a.created_at} — by ${a.author || "unknown"}</div>
+          <div style="margin-top:6px;">${escapeHtml(a.text)}</div>
+        `;
+        box.appendChild(el);
+      });
+    }
+
+    $("#announceSend").addEventListener("click", async ()=>{
+      const text = $("#announceText").value.trim();
+      if (!text) return;
+      const r = await fetchJSON("/announcements", { method:"POST", body: JSON.stringify({ text }) });
+      if (r.ok){ $("#announceText").value=""; loadAnnouncements(); }
+      else alert((r.data && r.data.message) || r.data || "Failed to post");
+    });
+
+    // ---------------- Tasks ----------------
+    async function loadTasks(){
+      const r = await fetchJSON("/tasks");
+      const box = $("#taskList");
+      box.innerHTML = "";
+      if (!r.ok){
+        box.innerHTML = `<div class="alert error">You are not allowed to view tasks.</div>`;
+        return;
+      }
+      const items = r.data.items || [];
+      if (!items.length) { box.innerHTML = `<div class="muted">No tasks yet.</div>`; return; }
+      items.forEach(t=>{
+        const el = document.createElement("div");
+        el.className = "card";
+        el.innerHTML = `
+          <div class="small muted">${t.created_at} — by ${t.created_by || "admin"}</div>
+          <div style="margin-top:6px;"><b>${escapeHtml(t.title)}</b></div>
+          ${t.body ? `<div class="small" style="margin-top:6px;">${escapeHtml(t.body)}</div>` : ""}
+        `;
+        box.appendChild(el);
+      });
+    }
+
+    $("#taskSend").addEventListener("click", async ()=>{
+      const title = $("#taskTitle").value.trim();
+      const body  = $("#taskBody").value.trim();
+      if (!title) return;
+      const r = await fetchJSON("/tasks", { method:"POST", body: JSON.stringify({ title, body }) });
+      if (r.ok){ $("#taskTitle").value=""; $("#taskBody").value=""; loadTasks(); }
+      else alert((r.data && r.data.message) || r.data || "Failed to create task");
+    });
+
+    // ---------------- Members / Database ----------------
+    async function loadMembers(){
+      if (!(AUTH.role === "Admin" || AUTH.canSeeDb)) return;
+      const r = await fetchJSON("/members");
+      const tbody = $("#membersTable tbody");
+      const dbMsg = $("#dbMsg");
+      tbody.innerHTML = "";
+      clearAlert(dbMsg);
+
+      if (!r.ok){
+        setAlert(dbMsg, false, (r.data && r.data.message) || r.data || "Failed to load members");
+        return;
+      }
+      const rows = r.data.items || [];
+      for (const m of rows) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${m.id}</td>
+          <td>${escapeHtml(m.username)}</td>
+          <td>${inputOrText("email", m.email)}</td>
+          <td>${inputOrText("first_name", m.first_name)}</td>
+          <td>${inputOrText("last_name", m.last_name)}</td>
+          <td>${inputOrText("birth_year", m.birth_year)}</td>
+          <td>${inputOrText("gender", m.gender)}</td>
+          <td>${inputOrText("phone_number", m.phone_number)}</td>
+          <td>${inputOrText("address", m.address)}</td>
+          <td>${roleSelect(m.role)}</td>
+          <td>${inputOrText("can_access_database_until", m.can_access_database_until, "YYYY-MM-DD HH:MM:SS")}</td>
+          <td>${inputOrText("can_access_everyone_until", m.can_access_everyone_until, "YYYY-MM-DD HH:MM:SS")}</td>
+          <td>${AUTH.role==="Admin" ? `<button class="btn small saveRow">Save</button>` : `<span class="muted">—</span>`}</td>
+        `;
+        tbody.appendChild(tr);
+        if (AUTH.role === "Admin") {
+          tr.querySelector(".saveRow").addEventListener("click", async ()=>{
+            const payload = {
+              id: m.id,
+              email: getVal(tr,"email"),
+              first_name: getVal(tr,"first_name"),
+              last_name: getVal(tr,"last_name"),
+              birth_year: Number(getVal(tr,"birth_year")||0),
+              gender: getVal(tr,"gender"),
+              phone_number: getVal(tr,"phone_number"),
+              address: getVal(tr,"address"),
+              role: tr.querySelector('select[name="role"]').value,
+              can_access_database_until: getVal(tr,"can_access_database_until"),
+              can_access_everyone_until: getVal(tr,"can_access_everyone_until"),
+            };
+            const res = await fetchJSON("/members/update", { method:"POST", body: JSON.stringify(payload) });
+            if (res.ok) setAlert(dbMsg, true, "Saved"); else setAlert(dbMsg, false, (res.data && res.data.message) || res.data || "Save failed");
+            setTimeout(()=>clearAlert(dbMsg), 1500);
+            loadMembers();
+          });
+        }
+        // If not Admin, make cells plain text
+        if (AUTH.role !== "Admin") {
+          tr.querySelectorAll("input, select, button.saveRow").forEach(el=>{
+            if (el.tagName === "BUTTON") el.disabled = true;
+            else el.replaceWith(document.createTextNode(el.value || el.textContent || ""));
+          });
+        }
+      }
+
+      // worker customers-only hint
+      if (AUTH.role === "Worker" && AUTH.customersOnly) {
+        setAlert(dbMsg, true, "Limited view: Customers only.");
+      }
+    }
+
+    function inputOrText(name, value, placeholder=""){
+      return `<input class="inline-input" name="${name}" value="${escapeAttr(value ?? "")}" ${placeholder ? `placeholder="${placeholder}"` : ""}/>`;
+    }
+    function roleSelect(current){
+      const roles = ["Customer","Worker","Admin"];
+      const opts = roles.map(r=>`<option ${r===current?"selected":""}>${r}</option>`).join("");
+      return `<select name="role" class="inline-input">${opts}</select>`;
+    }
+    function getVal(tr, name){ const el = tr.querySelector(`[name="${name}"]`); return el ? el.value : ""; }
+    function escapeHtml(s){ return (s??"").toString().replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+    function escapeAttr(s){ return escapeHtml(s).replace(/"/g, "&quot;"); }
+
+  </script>
+</body>
+</html>
