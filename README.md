@@ -39,7 +39,7 @@ git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg
 .\bootstrap-vcpkg.bat
 .\vcpkg integrate install
-.\vcpkg install crow:x64-windows sqlite3:x64-windows sqlite-modern-cpp:x64-windows
+.\vcpkg install sqlite-modern-cpp:x64-windows
 ```
 
 ### 3. Configure in Visual Studio
