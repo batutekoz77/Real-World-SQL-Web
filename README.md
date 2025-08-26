@@ -40,6 +40,7 @@ cd vcpkg
 .\bootstrap-vcpkg.bat
 .\vcpkg integrate install
 .\vcpkg install sqlite-modern-cpp:x64-windows
+.\vcpkg install openssl:x64-windows
 ```
 
 ### 3. Configure in Visual Studio
@@ -62,6 +63,7 @@ Pull requests are welcome! Feel free to open issues for bugs, feature requests, 
 ## Credits
 - **C++** – Core language  
 - **HTML & CSS** – Front-end design and layout  
+- **Js** – Handle project interactions
 - **Crow** – Lightweight C++ web framework  
 - **SQLite** – Database management  
 - **Visual Studio** – Development environment  
