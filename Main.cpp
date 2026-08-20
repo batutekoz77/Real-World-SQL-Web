@@ -23,12 +23,9 @@
 #include <windows.h>
 #include <shellapi.h>
 
-// ----------------- Helpers (hash / hex / time / tokens) -----------------
-
 static std::string to_hex(const unsigned char* data, size_t len) {
     std::ostringstream oss;
-    for (size_t i = 0; i < len; ++i)
-        oss << std::hex << std::setw(2) << std::setfill('0') << (int)data[i];
+    for (size_t i = 0; i < len; ++i) oss << std::hex << std::setw(2) << std::setfill('0') << (int)data[i];
     return oss.str();
 }
 
@@ -40,8 +37,7 @@ static std::string sha256_hex(const std::string& input) {
 
 static std::string make_salt(size_t bytes = 16) {
     std::vector<unsigned char> buf(bytes);
-    if (RAND_bytes(buf.data(), static_cast<int>(buf.size())) != 1)
-        throw std::runtime_error("RAND_bytes failed");
+    if (RAND_bytes(buf.data(), static_cast<int>(buf.size())) != 1) throw std::runtime_error("RAND_bytes failed");
     return to_hex(buf.data(), buf.size());
 }
 
@@ -49,7 +45,6 @@ static std::string salted_hash(const std::string& salt_hex, const std::string& p
     return sha256_hex(salt_hex + ":" + password);
 }
 
-// "YYYY-MM-DD HH:MM:SS" in UTC (lexicographically comparable)
 static std::string now_utc_str() {
     using namespace std::chrono;
     auto now = system_clock::now();
@@ -63,12 +58,10 @@ static std::string now_utc_str() {
 
 static std::string random_token_hex(size_t bytes = 32) {
     std::vector<unsigned char> buf(bytes);
-    if (RAND_bytes(buf.data(), static_cast<int>(buf.size())) != 1)
-        throw std::runtime_error("RAND_bytes failed");
+    if (RAND_bytes(buf.data(), static_cast<int>(buf.size())) != 1) throw std::runtime_error("RAND_bytes failed");
     return to_hex(buf.data(), buf.size());
 }
 
-// ----------------- Very simple token store (in-memory) ------------------
 
 struct Session {
     std::string username;
@@ -80,14 +73,12 @@ static std::unordered_map<std::string, Session> g_sessions;
 static std::mutex g_sessions_mx;
 
 static std::string get_token_from(const crow::request& req) {
-    // Prefer "Authorization: Bearer <token>"
     auto it = req.headers.find("Authorization");
     if (it != req.headers.end()) {
         std::string v = it->second;
         const std::string p = "Bearer ";
         if (v.rfind(p, 0) == 0) return v.substr(p.size());
     }
-    // Fallback: ?token=...
     auto q = crow::query_string(req.url_params);
     if (auto t = req.url_params.get("token")) return std::string(t);
     return {};
@@ -103,11 +94,9 @@ static bool auth(const crow::request& req, Session& out) {
     return true;
 }
 
-// ----------------- Access logic helpers -----------------
-
 struct DbAccess {
-    bool canSeeDb = false;          // can open Database tab at all
-    bool customersOnly = false;     // if true, worker can only see Customers
+    bool canSeeDb = false;
+    bool customersOnly = false;
 };
 
 static DbAccess compute_db_access(sqlite::database& db, const std::string& username, const std::string& role) {
@@ -131,13 +120,10 @@ static DbAccess compute_db_access(sqlite::database& db, const std::string& usern
     return res;
 }
 
-// ----------------- Main -----------------
-
-int main() {
+auto main() -> int {
     try {
         sqlite::database db("users.db");
         
-        // Create tables
         db <<
             "CREATE TABLE IF NOT EXISTS users ("
             " id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -174,7 +160,6 @@ int main() {
             " created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
             ");";
 
-        // Bootstrap admin if missing
         int admin_count = 0;
         db << "SELECT COUNT(*) FROM users WHERE username='Xoid';" >> admin_count;
 
@@ -206,18 +191,14 @@ int main() {
 
         crow::SimpleApp app;
 
-        // Serve the single-page frontend
         CROW_ROUTE(app, "/")([] {
             std::ifstream file("../../index.html");
-            if (!file.is_open()) {
-                return crow::response(404, "index.html not found");
-            }
+            if (!file.is_open()) return crow::response(404, "index.html not found");
             std::ostringstream buf;
             buf << file.rdbuf();
             return crow::response{ buf.str() };
-            });
+        });
 
-        // -------- Auth endpoints --------
 
         CROW_ROUTE(app, "/register").methods("POST"_method)([&db](const crow::request& req) {
             auto body = crow::json::load(req.body);
@@ -244,11 +225,9 @@ int main() {
                     << first_name << last_name << birth_year
                     << gender << phone << address;
             }
-            catch (std::exception& e) {
-                return crow::response(400, std::string("Error: ") + e.what());
-            }
+            catch (std::exception& e) { return crow::response(400, std::string("Error: ") + e.what()); }
             return crow::response(200, "Registration successful!");
-            });
+        });
 
         CROW_ROUTE(app, "/login").methods("POST"_method)([&db](const crow::request& req) {
             auto body = crow::json::load(req.body);
@@ -264,13 +243,11 @@ int main() {
                 << username
                 >> [&](std::string hash, std::string salt, std::string r) {
                 stored_hash = hash; stored_salt = salt; role = r; found = 1;
-                };
+            };
 
             if (!found) return crow::response(401, "Invalid username or password");
-            if (salted_hash(stored_salt, password) != stored_hash)
-                return crow::response(401, "Invalid username or password");
+            if (salted_hash(stored_salt, password) != stored_hash) return crow::response(401, "Invalid username or password");
 
-            // make token
             std::string token = random_token_hex(32);
             {
                 std::lock_guard<std::mutex> lock(g_sessions_mx);
@@ -283,9 +260,8 @@ int main() {
             res["username"] = username;
             res["token"] = token;
             return crow::response(200, res);
-            });
+        });
 
-        // Current user + computed permissions
         CROW_ROUTE(app, "/me").methods("GET"_method)([&db](const crow::request& req) {
             Session s;
             if (!auth(req, s)) return crow::response(401, "Unauthorized");
@@ -298,12 +274,9 @@ int main() {
             res["canSeeDb"] = da.canSeeDb;
             res["customersOnly"] = da.customersOnly;
             return crow::response(200, res);
-            });
-
-        // -------- Announcements --------
+        });
 
         CROW_ROUTE(app, "/announcements").methods("GET"_method)([&db](const crow::request& req) {
-            // Everyone can read
             crow::json::wvalue::list arr;
             db << "SELECT id, text, COALESCE(author_username,''), COALESCE(created_at,'') "
                 "FROM announcements ORDER BY id DESC;"
@@ -318,7 +291,7 @@ int main() {
             crow::json::wvalue res;
             res["items"] = std::move(arr);
             return crow::response(200, res);
-            });
+        });
 
         CROW_ROUTE(app, "/announcements").methods("POST"_method)([&db](const crow::request& req) {
             Session s;
@@ -335,15 +308,12 @@ int main() {
                 << text << s.username;
 
             return crow::response(200, "Announcement posted");
-            });
-
-        // -------- Tasks (visible for Admin & Worker) --------
+        });
 
         CROW_ROUTE(app, "/tasks").methods("GET"_method)([&db](const crow::request& req) {
             Session s;
             if (!auth(req, s)) return crow::response(401, "Unauthorized");
-            if (!(s.role == "Admin" || s.role == "Worker"))
-                return crow::response(403, "Not allowed");
+            if (!(s.role == "Admin" || s.role == "Worker")) return crow::response(403, "Not allowed");
 
             crow::json::wvalue::list arr;
             db << "SELECT id, title, COALESCE(body,''), COALESCE(created_by,''), COALESCE(created_at,'') "
@@ -356,13 +326,12 @@ int main() {
                 item["created_by"] = created_by;
                 item["created_at"] = created_at;
                 arr.push_back(std::move(item));
-                };
+            };
             crow::json::wvalue res;
             res["items"] = std::move(arr);
             return crow::response(200, res);
-            });
+        });
 
-        // Optional: Admin can create tasks
         CROW_ROUTE(app, "/tasks").methods("POST"_method)([&db](const crow::request& req) {
             Session s;
             if (!auth(req, s)) return crow::response(401, "Unauthorized");
@@ -371,13 +340,10 @@ int main() {
             auto body = crow::json::load(req.body);
             if (!body) return crow::response(400, "Invalid JSON");
 
-            // helpers
             auto getOrEmpty = [&](const char* k) -> std::string {
-                if (body.has(std::string(k)) && body[std::string(k)].t() == crow::json::type::String) {
-                    return body[std::string(k)].s();
-                }
+                if (body.has(std::string(k)) && body[std::string(k)].t() == crow::json::type::String) return body[std::string(k)].s();
                 return "";
-                };
+            };
 
             std::string title = getOrEmpty("title");
             std::string tbody = getOrEmpty("body");
@@ -388,27 +354,19 @@ int main() {
                 db << "INSERT INTO tasks (title, body, created_by) VALUES (?, ?, ?);"
                     << title << tbody << s.username;
             }
-            catch (std::exception& e) {
-                return crow::response(500, std::string("DB insert failed: ") + e.what());
-            }
-
+            catch (std::exception& e) { return crow::response(500, std::string("DB insert failed: ") + e.what()); }
             return crow::response(200, "Task created");
         });
 
-        // -------- Members / Database --------
-        // GET /members : list users (Admin: all; Worker: allowed if access_* valid; Customer: never)
         CROW_ROUTE(app, "/members").methods("GET"_method)([&db](const crow::request& req) {
             Session s;
             if (!auth(req, s)) return crow::response(401, "Unauthorized");
 
             DbAccess da = compute_db_access(db, s.username, s.role);
-            if (!(s.role == "Admin" || (s.role == "Worker" && da.canSeeDb))) {
-                return crow::response(403, "Not allowed to read database");
-            }
+            if (!(s.role == "Admin" || (s.role == "Worker" && da.canSeeDb))) return crow::response(403, "Not allowed to read database");
 
             crow::json::wvalue::list arr;
             if (s.role == "Admin" || (s.role == "Worker" && !da.customersOnly)) {
-                // All users
                 db << "SELECT id, username, email, COALESCE(first_name,''), COALESCE(last_name,''), "
                     "COALESCE(birth_year,0), COALESCE(gender,''), COALESCE(phone_number,''), COALESCE(address,''), role, "
                     "COALESCE(can_access_database_until,''), COALESCE(can_access_everyone_until,''), COALESCE(created_at,'') "
@@ -428,7 +386,6 @@ int main() {
                     };
             }
             else {
-                // Worker with customersOnly: only Customers
                 db << "SELECT id, username, email, COALESCE(first_name,''), COALESCE(last_name,''), "
                     "COALESCE(birth_year,0), COALESCE(gender,''), COALESCE(phone_number,''), COALESCE(address,''), role, "
                     "COALESCE(can_access_database_until,''), COALESCE(can_access_everyone_until,''), COALESCE(created_at,'') "
@@ -451,9 +408,8 @@ int main() {
             crow::json::wvalue res;
             res["items"] = std::move(arr);
             return crow::response(200, res);
-            });
+        });
 
-        // Admin-only: update a user's fields
         CROW_ROUTE(app, "/members/update").methods("POST"_method)([&db](const crow::request& req) {
             Session s;
             if (!auth(req, s)) return crow::response(401, "Unauthorized");
@@ -463,17 +419,12 @@ int main() {
             if (!body) return crow::response(400, "Invalid JSON");
 
             int id = body["id"].i();
-            // Accept these fields (if present)
             auto getOrEmpty = [&](const char* k) -> std::string {
-                if (body.has(std::string(k)) && body[std::string(k)].t() == crow::json::type::String) {
-                    return body[std::string(k)].s();
-                }
+                if (body.has(std::string(k)) && body[std::string(k)].t() == crow::json::type::String) return body[std::string(k)].s();
                 return "";
             };
             auto getOrInt = [&](const char* k) -> int {
-                if (body.has(std::string(k)) && body[std::string(k)].t() == crow::json::type::Number) {
-                    return body[std::string(k)].i();
-                }
+                if (body.has(std::string(k)) && body[std::string(k)].t() == crow::json::type::Number) return body[std::string(k)].i();
                 return 0;
             };
 
@@ -495,25 +446,20 @@ int main() {
                     << first_name << last_name << birth_year << gender << phone << address << email << role
                     << db_until << all_until << id;
             }
-            catch (std::exception& e) {
-                return crow::response(400, std::string("Update failed: ") + e.what());
-            }
+            catch (std::exception& e) { return crow::response(400, std::string("Update failed: ") + e.what()); }
             return crow::response(200, "User updated");
-            });
+        });
 
-        // -------------- Start server --------------
         std::thread server_thread([&app]() {
             app.port(18080).multithreaded().run();
-            });
+        });
 
-        std::this_thread::sleep_for(std::chrono::seconds(1)); // give server a moment
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
         ShellExecuteA(NULL, "open", "http://localhost:18080", NULL, NULL, SW_SHOWNORMAL);
 
         server_thread.join();
     }
-    catch (std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
+    catch (std::exception& e) { std::cerr << "Error: " << e.what() << std::endl; }
     return 0;
 }
